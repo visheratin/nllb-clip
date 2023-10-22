@@ -2,18 +2,14 @@ import os
 from typing import List
 
 from data_item import DataItem
+from flickr30k import get_flickr30k_data
 from flores_langs import flores_lang_codes
-from xtd10 import get_file_paths, image_dir, image_names_file
 
-data_dir = "./data/xtd200"
+data_dir = "../data/flickr30k-200"
 
 
-def get_xtd200_data() -> List[DataItem]:
-    file_path = os.path.join(data_dir, image_names_file)
-    with open(file_path, "r") as f:
-        image_names = f.readlines()
-    image_names = [name.replace("\n", "") for name in image_names]
-    image_paths = get_file_paths(image_names, image_dir)
+def get_flickr30k_200_data() -> List[DataItem]:
+    flickr30k_items = get_flickr30k_data()
     res_items: List[DataItem] = []
     for lang in flores_lang_codes:
         filename = f"{lang}.txt"
@@ -21,13 +17,13 @@ def get_xtd200_data() -> List[DataItem]:
         with open(file_path, "r") as f:
             captions = f.readlines()
         captions = [caption.replace("\n", "") for caption in captions]
-        for i, _ in enumerate(image_paths):
+        for i, item in enumerate(flickr30k_items):
             data_item = DataItem(
-                image_path=image_paths[i],
+                image_path="",
                 language=lang,
                 captions=[captions[i]],
                 eng_caption="",
-                image=None,
+                image=item.image,
             )
             res_items.append(data_item)
     return res_items

@@ -2,14 +2,13 @@ import json
 import os
 from typing import List
 
-from tqdm import tqdm
-
 from data_item import DataItem
+from tqdm import tqdm
 
 # https://google.github.io/crossmodal-3600/
 
-captions_path = "./data/xm3600/captions.jsonl"
-image_dir = "./data/xm3600/images"
+captions_path = "../data/xm3600/captions.jsonl"
+image_dir = "../data/xm3600/images"
 
 
 def get_xm3600_data() -> List[DataItem]:

@@ -1,15 +1,14 @@
 import os
 from typing import List
 
+from data_item import DataItem
 from datasets import load_dataset
 from tqdm import tqdm
 
-from data_item import DataItem
-
 # https://zero.so.com/download.html
 
-test_file_path = "./data/flickr30k-cn/test.txt"
-val_file_path = "./data/flickr30k-cn/val.txt"
+test_file_path = "../data/flickr30k-cn/test.txt"
+val_file_path = "../data/flickr30k-cn/val.txt"
 
 
 def get_flickr30k_cn_data() -> List[DataItem]:

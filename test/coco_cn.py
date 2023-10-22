@@ -1,14 +1,12 @@
 import json
-import os
 from typing import List
 
-from tqdm import tqdm
-
 from data_item import DataItem
+from tqdm import tqdm
 
 # https://github.com/li-xirong/coco-cn
 
-test_file_path = "./data/coco_cn/captions.json"
+test_file_path = "../data/coco_cn/captions.json"
 
 
 def get_coco_cn_data() -> List[DataItem]:
@@ -32,7 +30,7 @@ def get_coco_cn_data() -> List[DataItem]:
                 break
         if not found:
             data_item = DataItem(
-                image_path=f"./data/coco_cn/images/{filename}",
+                image_path=f"../data/coco_cn/images/{filename}",
                 language=language,
                 captions=[caption],
                 eng_caption="",

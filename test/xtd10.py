@@ -1,13 +1,12 @@
 import os
 from typing import List
 
+from data_item import DataItem
 from tqdm import tqdm
 
-from data_item import DataItem
-
 image_names_file = "test_image_names.txt"
-data_dir = "./data/xtd10/captions"
-image_dir = "./data/xtd10/images"
+data_dir = "../data/xtd10/captions"
+image_dir = "../data/xtd10/images"
 
 
 def get_xtd10_data() -> List[DataItem]:
