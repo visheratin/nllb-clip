@@ -1,0 +1,5 @@
+onnxruntime
+transformers
+sentencepiece
+ctranslate2
+boto3
