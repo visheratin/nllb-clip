@@ -9,9 +9,11 @@ from downloader import init_download
 from translator import init_translation
 
 if __name__ == "__main__":
-    endpoint_url = os.environ["S3_ENDPOINT_URL"]
-    key_id = os.environ["S3_KEY_ID"]
-    secret_key = os.environ["S3_SECRET_KEY"]
+    mp.set_start_method("spawn")
+    s3_endpoint_url = os.environ["S3_ENDPOINT_URL"]
+    s3_key_id = os.environ["S3_KEY_ID"]
+    s3_secret_key = os.environ["S3_SECRET_KEY"]
+    s3_bucket = os.environ["S3_BUCKET"]
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -22,7 +24,6 @@ if __name__ == "__main__":
         default=32,
     )
     parser.add_argument("-o", "--out_dir", type=str, dest="out_dir", default="./data")
-    parser.add_argument("-b", "--bucket", type=str, dest="bucket", default="")
     parser.add_argument(
         "-i",
         "--img_dir",
@@ -39,6 +40,8 @@ if __name__ == "__main__":
     )
     parser.add_argument("-gn", "--gpu_num", type=int, dest="gpu_num", default=1)
     args = parser.parse_args()
+    os.makedirs(args.img_dir, exist_ok=True)
+    os.makedirs(args.out_dir, exist_ok=True)
     data_queue = mp.Queue()
     items_queue = mp.Queue()
     for i in range(args.downloaders_num):
@@ -49,10 +52,10 @@ if __name__ == "__main__":
                 "./aesthetic-scorer.onnx",
                 args.img_dir,
                 items_queue,
-                endpoint_url,
-                key_id,
-                secret_key,
-                args.bucket,
+                s3_endpoint_url,
+                s3_key_id,
+                s3_secret_key,
+                s3_bucket,
             ),
         )
         p.start()
