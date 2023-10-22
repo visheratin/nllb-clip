@@ -8,8 +8,8 @@ from data_item import DataItem
 
 # https://zero.so.com/download.html
 
-test_file_path = "./flickr30k-cn/test.txt"
-val_file_path = "./flickr30k-cn/val.txt"
+test_file_path = "./data/flickr30k-cn/test.txt"
+val_file_path = "./data/flickr30k-cn/val.txt"
 
 
 def get_flickr30k_cn_data() -> List[DataItem]:

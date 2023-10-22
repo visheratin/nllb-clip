@@ -6,7 +6,7 @@ from tqdm import tqdm
 from data_item import DataItem
 
 image_names_file = "test_image_names.txt"
-data_dir = "./data/xtd10"
+data_dir = "./data/xtd10/captions"
 image_dir = "./data/xtd10/images"
 
 

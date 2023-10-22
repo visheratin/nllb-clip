@@ -3,15 +3,16 @@ import os
 from dataclasses import dataclass
 from typing import Dict, List
 
+from open_clip import CustomTextCLIP
+from transformers import PreTrainedTokenizer
+
 from coco_cn import get_coco_cn_data
-from crossmodal3600 import get_crossmodal3600_data
 from data_item import DataItem
 from flickr30k import get_flickr30k_data
 from flickr30k_200 import get_flickr30k_200_data
 from flickr30k_cn import get_flickr30k_cn_data
 from index import IndexType, build_index, get_recall
-from open_clip import CustomTextCLIP
-from transformers import PreTrainedTokenizer
+from xm3600 import get_xm3600_data
 from xtd10 import get_xtd10_data
 from xtd200 import get_xtd200_data
 
@@ -34,6 +35,7 @@ class Experiment:
         self.embedding_size = embedding_size
         self.exp_name = exp_name
         self.save_path = save_path
+        os.makedirs(save_path, exist_ok=True)
         self.runs: List[DatasetRun] = []
 
     def run(self, model, transform, tokenizer):
@@ -41,7 +43,7 @@ class Experiment:
         self.runs.append(dataset_run)
         dataset_run = self.test_coco_cn(model, transform, tokenizer)
         self.runs.append(dataset_run)
-        dataset_run = self.test_crossmodal3600(model, transform, tokenizer)
+        dataset_run = self.test_xm3600(model, transform, tokenizer)
         self.runs.append(dataset_run)
         dataset_run = self.test_flickr30k_cn(model, transform, tokenizer)
         self.runs.append(dataset_run)
@@ -79,10 +81,7 @@ class Experiment:
         print("Testing XTD10 data")
         print("-----------")
 
-        data_dir = "/home/ubuntu/train/data"
-        image_dir = "/home/ubuntu/train/data/xtd_10_images"
-
-        data_items = get_xtd10_data(data_dir, image_dir)
+        data_items = get_xtd10_data()
         print(f"Dataset size: {len(data_items)} items")
         lang_runs = self.run_test(data_items, model, transform, tokenizer)
         return DatasetRun("xtd10", lang_runs)
@@ -97,15 +96,12 @@ class Experiment:
         print("Testing XTD200 data")
         print("-----------")
 
-        data_dir = "/home/ubuntu/train/test/data/xtd200"
-        image_dir = "/home/ubuntu/train/test/data/train2014"
-
-        data_items = get_xtd200_data(data_dir, image_dir)
+        data_items = get_xtd200_data()
         print(f"Dataset size: {len(data_items)} items")
         lang_runs = self.run_test(data_items, model, transform, tokenizer)
         return DatasetRun("xtd200", lang_runs)
 
-    def test_crossmodal3600(
+    def test_xm3600(
         self,
         model,
         transform,
@@ -115,9 +111,7 @@ class Experiment:
         print("Testing Crossmodal3600 data")
         print("-----------")
 
-        data_dir = "/home/ubuntu/train/test/data/crossmodal3600"
-
-        data_items = get_crossmodal3600_data(data_dir)
+        data_items = get_xm3600_data()
         print(f"Dataset size: {len(data_items)} items")
         lang_runs = self.run_test(data_items, model, transform, tokenizer)
         return DatasetRun("crossmodal3600", lang_runs)
@@ -132,11 +126,7 @@ class Experiment:
         print("Testing COCO CN data")
         print("-----------")
 
-        data_dir = "/home/ubuntu/train/test/data/coco-cn-cap-eval"
-        train_images_dir = "/home/ubuntu/train/test/data/train2014"
-        val_images_dir = "/home/ubuntu/train/test/data/val2014"
-
-        data_items = get_coco_cn_data(data_dir, train_images_dir, val_images_dir)
+        data_items = get_coco_cn_data()
         print(f"Dataset size: {len(data_items)} items")
         lang_runs = self.run_test(data_items, model, transform, tokenizer)
         return DatasetRun("coco_cn", lang_runs)
@@ -151,8 +141,7 @@ class Experiment:
         print("Testing Flickr30k CN data")
         print("-----------")
 
-        data_dir = "/home/ubuntu/train/test/data/Flickr30k-CNA"
-        data_items = get_flickr30k_cn_data(data_dir)
+        data_items = get_flickr30k_cn_data()
         print(f"Dataset size: {len(data_items)} items")
         lang_runs = self.run_test(data_items, model, transform, tokenizer)
         return DatasetRun("flickr30k_cn", lang_runs)
@@ -167,7 +156,7 @@ class Experiment:
         print("Testing Flickr30k data, test split")
         print("-----------")
 
-        data_items = get_flickr30k_data(True)
+        data_items = get_flickr30k_data()
         print(f"Dataset size: {len(data_items)} items")
         lang_runs = self.run_test(data_items, model, transform, tokenizer)
         return DatasetRun("flickr30k", lang_runs)
@@ -182,8 +171,7 @@ class Experiment:
         print("Testing Flickr30k-200 data")
         print("-----------")
 
-        data_dir = "/home/ubuntu/train/test/data/Flickr30k-200"
-        data_items = get_flickr30k_200_data(data_dir)
+        data_items = get_flickr30k_200_data()
         print(f"Dataset size: {len(data_items)} items")
         lang_runs = self.run_test(data_items, model, transform, tokenizer)
         return DatasetRun("flickr30k-200", lang_runs)
@@ -199,10 +187,11 @@ class Experiment:
         res = []
         index_types = [IndexType.TextToImage, IndexType.ImageToText]
         for index_type in index_types:
+            index_type_str = "t2i" if index_type == IndexType.TextToImage else "i2t"
             for lang_code in langs:
                 run = LanguageRun(
                     lang_code,
-                    "t2i" if index_type == IndexType.TextToImage else "i2t",
+                    index_type_str,
                     {},
                 )
                 subset = []
@@ -218,7 +207,9 @@ class Experiment:
                     subset, model, transform, tokenizer, index, options, index_type
                 )
                 for i, recall in enumerate(recalls):
-                    print(f"Language: {lang_code}, recall@{options[i]}: {recall}")
+                    print(
+                        f"Type: {index_type_str}, language: {lang_code}, recall@{options[i]}: {recall}"
+                    )
                     run.results[f"recall@{options[i]}"] = recall
                 res.append(run)
         return res

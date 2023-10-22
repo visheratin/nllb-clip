@@ -3,11 +3,12 @@ from typing import List
 
 import faiss
 import torch
-from data_item import DataItem
-from lang_map import lang_map
 from open_clip import CustomTextCLIP
 from PIL import Image
 from transformers import PreTrainedTokenizer
+
+from data_item import DataItem
+from lang_map import lang_map
 
 
 class IndexType(Enum):
@@ -75,7 +76,6 @@ def process_image_batch(items: List[DataItem], model, transform):
             image = Image.open(item.image_path).convert("RGB")
             images.append(transform(image))
     input_tensors = torch.stack(images, dim=0).to("cuda")
-    # input_tensors = transform(images).to("cuda")
     with torch.no_grad():
         output = model.encode_image(input_tensors).cpu().detach().numpy()
     return output
