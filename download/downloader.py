@@ -6,14 +6,16 @@ from time import sleep
 
 import boto3
 import requests
+from aesthetic import AestheticPredictor
 from data_item import DataItem
+from nsfw import NSFWPredictor
 from PIL import Image
-from predictor import AestheticPredictor
 
 
 def init_download(
     in_queue: mp.Queue,
     predictor_model_path: str,
+    nsfw_model_path: str,
     image_dir: str,
     out_queue: mp.Queue,
     s3_endpoint: str = "",
@@ -37,12 +39,15 @@ def init_download(
                 aws_secret_access_key=s3_secret,
             )
         predictor = AestheticPredictor(predictor_model_path)
+        nsfw_predictor = NSFWPredictor(nsfw_model_path)
         print("Downloader was started")
         while True:
             item = in_queue.get()
             if item is None:
                 break
-            ok = process_item(item, predictor, image_dir, s3_bucket, s3_client)
+            ok = process_item(
+                item, predictor, nsfw_predictor, image_dir, s3_bucket, s3_client
+            )
             if ok:
                 out_queue.put(item)
             while out_queue.qsize() > 1000:
@@ -54,17 +59,23 @@ def init_download(
 def process_item(
     item: DataItem,
     predictor: AestheticPredictor,
+    nsfw_predictor: NSFWPredictor,
     image_dir: str,
     s3_bucket: str,
     s3_client,
 ) -> bool:
     try:
+        size_threshold = 400
         response = requests.get(item.url, timeout=5)
         img = Image.open(BytesIO(response.content)).convert("RGB")
+        if img.width < size_threshold or img.height < size_threshold:
+            return False
         score = float(predictor.process([img]))
-        if score < 4.5:
+        if score < 5.0:
             return False
         item.score = score
+        if nsfw_predictor.process([img]):
+            return False
         id = str(uuid.uuid4())
         item.id = id
         file_path = f"{image_dir}/{id}.jpg"

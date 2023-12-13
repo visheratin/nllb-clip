@@ -8,5 +8,8 @@ wget https://pretrained-nmt-models.s3.us-west-2.amazonaws.com/CTranslate2/nllb/f
 # Download aesthetic scoring model
 wget https://nllb-data.com/models/aesthetic-scorer.onnx
 
+# Download NSFW prediction model
+wget https://nllb-data.com/models/nsfw-predictor.onnx
+
 # Install dependencies
 pip install -r requirements.txt

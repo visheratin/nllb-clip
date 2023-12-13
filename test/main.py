@@ -1,7 +1,6 @@
+from experiment import Experiment
 from open_clip import create_model_and_transforms
 from transformers import AutoTokenizer
-
-from experiment import Experiment
 
 if __name__ == "__main__":
     # test base model

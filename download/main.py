@@ -9,11 +9,11 @@ from downloader import init_download
 from translator import init_translation
 
 if __name__ == "__main__":
-    mp.set_start_method("spawn")
-    s3_endpoint_url = os.environ["S3_ENDPOINT_URL"]
-    s3_key_id = os.environ["S3_KEY_ID"]
-    s3_secret_key = os.environ["S3_SECRET_KEY"]
-    s3_bucket = os.environ["S3_BUCKET"]
+    endpoint_url = os.environ["S3_ENDPOINT_URL"]
+    key_id = os.environ["S3_KEY_ID"]
+    secret_key = os.environ["S3_SECRET_KEY"]
+    if endpoint_url == "" or key_id == "" or secret_key == "":
+        raise ValueError("Missing S3 credentials")
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -21,27 +21,56 @@ if __name__ == "__main__":
         "--batch_size",
         type=int,
         dest="batch_size",
-        default=32,
     )
-    parser.add_argument("-o", "--out_dir", type=str, dest="out_dir", default="./data")
+    parser.add_argument(
+        "-o",
+        "--out_dir",
+        type=str,
+        dest="out_dir",
+    )
+    parser.add_argument(
+        "-b",
+        "--bucket",
+        type=str,
+        dest="bucket",
+    )
     parser.add_argument(
         "-i",
         "--img_dir",
         type=str,
         dest="img_dir",
-        default="./images",
-    )
-    parser.add_argument("-df", "--data_file", type=str, dest="data_file", default="")
-    parser.add_argument(
-        "-tn", "--translators_num", type=int, dest="translators_num", default=1
     )
     parser.add_argument(
-        "-dn", "--downloaders_num", type=int, dest="downloaders_num", default=1
+        "-df",
+        "--data_file",
+        type=str,
+        dest="data_file",
     )
-    parser.add_argument("-gn", "--gpu_num", type=int, dest="gpu_num", default=1)
+    parser.add_argument(
+        "-pp",
+        "--predictor_path",
+        type=str,
+        dest="predictor_path",
+    )
+    parser.add_argument(
+        "-np",
+        "--nsfw_path",
+        type=str,
+        dest="nsfw_path",
+    )
+    parser.add_argument(
+        "-tn",
+        "--translators_num",
+        type=int,
+        dest="translators_num",
+    )
+    parser.add_argument(
+        "-dn",
+        "--downloaders_num",
+        type=int,
+        dest="downloaders_num",
+    )
     args = parser.parse_args()
-    os.makedirs(args.img_dir, exist_ok=True)
-    os.makedirs(args.out_dir, exist_ok=True)
     data_queue = mp.Queue()
     items_queue = mp.Queue()
     for i in range(args.downloaders_num):
@@ -49,13 +78,14 @@ if __name__ == "__main__":
             target=init_download,
             args=(
                 data_queue,
-                "./aesthetic-scorer.onnx",
+                args.predictor_path,
+                args.nsfw_path,
                 args.img_dir,
                 items_queue,
-                s3_endpoint_url,
-                s3_key_id,
-                s3_secret_key,
-                s3_bucket,
+                endpoint_url,
+                key_id,
+                secret_key,
+                args.bucket,
             ),
         )
         p.start()
@@ -69,21 +99,15 @@ if __name__ == "__main__":
                 items_queue,
                 args.batch_size,
                 args.out_dir,
-                [i % args.gpu_num],
+                [i % 8],
             ),
         )
         p.start()
-    if args.data_file == "":
-        dataset = load_dataset(
-            "laion/laion-coco",
-            split="train",
-        )
-    else:
-        dataset = load_dataset(
-            "laion/laion-coco",
-            split="train",
-            data_files=args.data_file,
-        )
+    dataset = load_dataset(
+        "laion/laion-coco",
+        split="train",
+        data_files=args.data_file,
+    )
     for _, item in enumerate(dataset):
         data_item = DataItem("", item["URL"], item["top_caption"], 0)
         data_queue.put(data_item)
